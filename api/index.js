@@ -44,8 +44,15 @@ function getTimestampString() {
   return `${year}:${month}:${day} ${hours}:${minutes}:${seconds}`;
 }
 
-app.get("/", (req, res) => {
-    res.send("Hello");
+app.get("/", async (req, res) => {
+    try {
+        const data = (await db.collection("komatsu_logs").get()).docs.map(doc => ({ ...doc.data(), time: doc.id }))
+        res.json(data);
+        console.log(`Sent data to client @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
+    } catch (error) {
+        console.log("🚀 ~ app.get ~ error:", error)
+        res.status(500).json({ error: "Server error in fetching data" });
+    }
 });
 
 app.post("/", async (req, res) => {
@@ -56,7 +63,8 @@ app.post("/", async (req, res) => {
             machine: 1,
             status: data.status
         }, { merge: true });
-        res.json({ message: `Stored data in firestore @ ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}` })
+        res.json({ message: `Stored data in firestore @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}` })
+        console.log(`Saved data to firestore @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
     } catch (error) {
         console.log("🚀 ~ app.post ~ error:", error)
         res.status(500).json({ error: "Server error in saving data" });
