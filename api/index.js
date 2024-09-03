@@ -2,7 +2,7 @@ import express from "express"
 import cors from "cors"
 import { configDotenv } from "dotenv";
 import { cert, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getDatabase } from "firebase-admin/database";
 configDotenv()
 
 const PORT = process.env.PORT || 3000;
@@ -19,10 +19,11 @@ initializeApp({
     clientEmail: process.env.CLIENT_EMAIL,
     privateKey: process.env.RSA.replace(/\\n/g, '\n')
   }),
+  databaseURL: process.env.RTDB_URL
 });
 
-// Get firestore DB
-const db = getFirestore();
+// Get RTDB DB
+const db = getDatabase().ref("komatsu_logs");
 
 
 /** Utility function to return timestamp in IST with `YYYY:MM:DD HH:MM:SS` format */
@@ -41,40 +42,43 @@ function getTimestampString() {
   const minutes = String(offsetDate.getUTCMinutes()).padStart(2, "0");
   const seconds = String(offsetDate.getUTCSeconds()).padStart(2, "0");
 
-  return `${year}:${month}:${day} ${hours}:${minutes}:${seconds}`;
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
-async function sendRawLogToFirestore(log) {
+async function sendRawLogToRTDB(log) {
     const ts = getTimestampString();
     try {
-        await db.collection("komatsu_logs").doc(ts).set({
+        await db.child(ts).set({
             machine: 1,
-            status: log
-        }, { merge: true });
-        console.log(`Saved data ${ts} to firestore @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
+            ...log
+        });
+        console.log(`Saved data ${ts} to RTDB @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
     } catch (error) {
-        console.error(`Save ${ts} to firestore failed @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
+        console.error(`Save ${ts} to RTDB failed @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
         console.dir(error, { depth: 6 })
     }
 }
 
-async function sendManualLogToFirestore(log) {
+async function sendManualLogToRTDB(log) {
     const ts = getTimestampString();
     try {
         await db.collection("komatsu_manual").doc(ts).set({
             status: log
         }, { merge: true });
-        console.log(`Saved manual log ${ts} to firestore @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
+        console.log(`Saved manual log ${ts} to RTDB @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
     } catch (error) {
-        console.error(`Save manual log ${ts} to firestore failed @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
+        console.error(`Save manual log ${ts} to RTDB failed @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
         console.dir(error, { depth: 6 })
     }
 }
 
+/** Temporarily disabling GET since data is fetched from firebase library in frontend directly */
 app.get("/", async (req, res) => {
     try {
-        const data = (await db.collection("komatsu_logs").get()).docs.map(doc => ({ ...doc.data(), time: doc.id }))
-        res.json(data);
+        // const data = (await db.collection("komatsu_logs").get()).docs.map(doc => ({ ...doc.data(), time: doc.id }))
+        res.json({
+            message: "GET endpoint"
+        });
         console.log(`Sent data to client @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
     } catch (error) {
         console.log("🚀 ~ app.get ~ error:", error)
@@ -85,31 +89,31 @@ app.get("/", async (req, res) => {
 app.post("/", async (req, res) => {
     try {
         const data = req.body;
-        sendRawLogToFirestore(data.status);
-        res.json({ message: `Stored data in firestore @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}` })
+        sendRawLogToRTDB(data);
+        res.json({ message: `Stored data in RTDB @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}` })
     } catch (error) {
         console.log("🚀 ~ app.post ~ error:", error)
         res.status(500).json({ error: "Server error in saving data" });
     }
 })
 
-
-app.get("/manual", async (req, res) => {
-    try {
-        const data = (await db.collection("komatsu_manual").get()).docs.map(doc => ({ ...doc.data(), time: doc.id }))
-        res.json(data);
-        console.log(`Sent manual data to client @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
-    } catch (error) {
-        console.log("🚀 ~ app.get ~ error:", error)
-        res.status(500).json({ error: "Server error in fetching data" });
-    }
-});
+/** Temporarily disabling GET since data is fetched from firebase library in frontend directly */
+// app.get("/manual", async (req, res) => {
+//     try {
+//         const data = (await db.collection("komatsu_manual").get()).docs.map(doc => ({ ...doc.data(), time: doc.id }))
+//         res.json(data);
+//         console.log(`Sent manual data to client @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
+//     } catch (error) {
+//         console.log("🚀 ~ app.get ~ error:", error)
+//         res.status(500).json({ error: "Server error in fetching data" });
+//     }
+// });
 
 app.post("/manual", async (req, res) => {
     try {
         const data = req.body;
-        sendManualLogToFirestore(data.status);
-        res.json({ message: `Stored data in firestore @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}` })
+        sendManualLogToRTDB(data.status);
+        res.json({ message: `Stored data in RTDB @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}` })
     } catch (error) {
         console.log("🚀 ~ app.post ~ error:", error)
         res.status(500).json({ error: "Server error in saving data" });
