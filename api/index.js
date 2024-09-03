@@ -59,19 +59,6 @@ async function sendRawLogToRTDB(log) {
     }
 }
 
-async function sendManualLogToRTDB(log) {
-    const ts = getTimestampString();
-    try {
-        await db.collection("komatsu_manual").doc(ts).set({
-            status: log
-        }, { merge: true });
-        console.log(`Saved manual log ${ts} to RTDB @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
-    } catch (error) {
-        console.error(`Save manual log ${ts} to RTDB failed @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
-        console.dir(error, { depth: 6 })
-    }
-}
-
 /** Temporarily disabling GET since data is fetched from firebase library in frontend directly */
 app.get("/", async (req, res) => {
     try {
@@ -90,29 +77,6 @@ app.post("/", async (req, res) => {
     try {
         const data = req.body;
         sendRawLogToRTDB(data);
-        res.json({ message: `Stored data in RTDB @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}` })
-    } catch (error) {
-        console.log("🚀 ~ app.post ~ error:", error)
-        res.status(500).json({ error: "Server error in saving data" });
-    }
-})
-
-/** Temporarily disabling GET since data is fetched from firebase library in frontend directly */
-// app.get("/manual", async (req, res) => {
-//     try {
-//         const data = (await db.collection("komatsu_manual").get()).docs.map(doc => ({ ...doc.data(), time: doc.id }))
-//         res.json(data);
-//         console.log(`Sent manual data to client @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
-//     } catch (error) {
-//         console.log("🚀 ~ app.get ~ error:", error)
-//         res.status(500).json({ error: "Server error in fetching data" });
-//     }
-// });
-
-app.post("/manual", async (req, res) => {
-    try {
-        const data = req.body;
-        sendManualLogToRTDB(data.status);
         res.json({ message: `Stored data in RTDB @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}` })
     } catch (error) {
         console.log("🚀 ~ app.post ~ error:", error)
