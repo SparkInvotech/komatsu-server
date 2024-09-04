@@ -54,8 +54,8 @@ async function sendRawLogToRTDB(log) {
         });
         console.log(`Saved data ${ts} to RTDB @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
     } catch (error) {
-        console.error(`Save ${ts} to RTDB failed @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
-        console.dir(error, { depth: 6 })
+        console.log(`Save ${ts} to RTDB failed @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
+        console.log(error)
     }
 }
 
