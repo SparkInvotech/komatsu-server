@@ -73,7 +73,7 @@ async function sendManualLogToFirestore(log) {
 
 app.get("/", async (req, res) => {
     try {
-        const data = (await db.collection("komatsu_logs").orderBy("machine").limitToLast(10).get()).docs.map(doc => ({ ...doc.data(), time: doc.id }))
+        const data = (await db.collection("komatsu_logs").orderBy("machine").limitToLast(15).get()).docs.map(doc => ({ ...doc.data(), time: doc.id.split(" ")[0].replaceAll(":", "-") + " " + doc.id.split(" ")[1] })).reverse()
         res.json(data);
         console.log(`Sent data to client @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
     } catch (error) {
