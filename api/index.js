@@ -41,7 +41,7 @@ function getTimestampString() {
   const minutes = String(offsetDate.getUTCMinutes()).padStart(2, "0");
   const seconds = String(offsetDate.getUTCSeconds()).padStart(2, "0");
 
-  return `${year}:${month}:${day} ${hours}:${minutes}:${seconds}`;
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 async function sendRawLogToFirestore(log) {
@@ -73,7 +73,7 @@ async function sendManualLogToFirestore(log) {
 
 app.get("/", async (req, res) => {
     try {
-        const data = (await db.collection("komatsu_logs").orderBy("machine").limitToLast(15).get()).docs.map(doc => ({ ...doc.data(), time: doc.id.split(" ")[0].replaceAll(":", "-") + " " + doc.id.split(" ")[1] }))
+        const data = (await db.collection("komatsu_logs").orderBy("machine").limitToLast(15).get()).docs.map(doc => ({ ...doc.data(), time: doc.id }))
         res.json(data);
         console.log(`Sent data to client @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
     } catch (error) {
@@ -86,29 +86,6 @@ app.post("/", async (req, res) => {
     try {
         const data = req.body;
         sendRawLogToFirestore(data.status);
-        res.json({ message: `Stored data in firestore @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}` })
-    } catch (error) {
-        console.log("🚀 ~ app.post ~ error:", error)
-        res.status(500).json({ error: "Server error in saving data" });
-    }
-})
-
-
-app.get("/manual", async (req, res) => {
-    try {
-        const data = (await db.collection("komatsu_manual").get()).docs.map(doc => ({ ...doc.data(), time: doc.id }))
-        res.json(data);
-        console.log(`Sent manual data to client @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`)
-    } catch (error) {
-        console.log("🚀 ~ app.get ~ error:", error)
-        res.status(500).json({ error: "Server error in fetching data" });
-    }
-});
-
-app.post("/manual", async (req, res) => {
-    try {
-        const data = req.body;
-        sendManualLogToFirestore(data.status);
         res.json({ message: `Stored data in firestore @${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}` })
     } catch (error) {
         console.log("🚀 ~ app.post ~ error:", error)
